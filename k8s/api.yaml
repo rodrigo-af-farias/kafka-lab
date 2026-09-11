@@ -1,0 +1,67 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-lab-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka-lab-api
+  template:
+    metadata:
+      labels:
+        app: kafka-lab-api
+    spec:
+      containers:
+        - name: kafka-lab-api
+          image: kafka-lab-api:v3
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-lab-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-lab-api
+spec:
+  selector:
+    app: kafka-lab-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP

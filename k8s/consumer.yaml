@@ -1,0 +1,30 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-lab-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-lab-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-lab-consumer
+    spec:
+      containers:
+        - name: kafka-lab-consumer
+          image: kafka-lab-consumer:local
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-lab-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+
+            - name: SQLSERVER_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-lab-secret
+                  key: SQLSERVER_CONNECTION_STRING

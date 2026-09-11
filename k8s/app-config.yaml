@@ -1,0 +1,15 @@
+﻿apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-lab-config
+data:
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:29092"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kafka-lab-secret
+type: Opaque
+stringData:
+  SQLSERVER_CONNECTION_STRING: "Server=sqlserver,1433;Database=KafkaLab;User Id=sa;Password=KafkaLab@12345;TrustServerCertificate=True;"
