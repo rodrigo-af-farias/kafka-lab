@@ -8,8 +8,17 @@ var kafkaBootstrapServers =
     Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
     ?? "localhost:9092";
 
+var kafkaSaslUsername =
+    Environment.GetEnvironmentVariable("KAFKA_SASL_USERNAME");
+
+var kafkaSaslPassword =
+    Environment.GetEnvironmentVariable("KAFKA_SASL_PASSWORD");
+
 builder.Services.AddSingleton<IEventPublisher>(
-    new KafkaEventPublisher(kafkaBootstrapServers));
+    new KafkaEventPublisher(
+        kafkaBootstrapServers,
+        kafkaSaslUsername,
+        kafkaSaslPassword));
 
 builder.Services.AddScoped<CreateOrderHandler>();
 

@@ -14,6 +14,12 @@ var kafkaBootstrapServers =
     Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS")
     ?? "localhost:9092";
 
+var kafkaSaslUsername =
+    Environment.GetEnvironmentVariable("KAFKA_SASL_USERNAME");
+
+var kafkaSaslPassword =
+    Environment.GetEnvironmentVariable("KAFKA_SASL_PASSWORD");
+
 var sqlServerConnectionString =
     Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING")
     ?? "Server=localhost,1433;Database=KafkaLab;User Id=sa;Password=KafkaLab@12345;TrustServerCertificate=True;";
@@ -37,6 +43,15 @@ var config = new ConsumerConfig
     AutoOffsetReset = AutoOffsetReset.Earliest,
     EnableAutoCommit = false
 };
+
+if (!string.IsNullOrWhiteSpace(kafkaSaslUsername) &&
+    !string.IsNullOrWhiteSpace(kafkaSaslPassword))
+{
+    config.SecurityProtocol = SecurityProtocol.SaslSsl;
+    config.SaslMechanism = SaslMechanism.Plain;
+    config.SaslUsername = kafkaSaslUsername;
+    config.SaslPassword = kafkaSaslPassword;
+}
 
 using var consumer = new ConsumerBuilder<string, string>(config).Build();
 
