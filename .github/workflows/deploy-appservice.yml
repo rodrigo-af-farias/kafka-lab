@@ -1,0 +1,55 @@
+﻿name: Deploy API to Azure App Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/KafkaLab.Api/**"
+      - "src/KafkaLab.Application/**"
+      - "src/KafkaLab.Infrastructure/**"
+      - ".github/workflows/deploy-appservice.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_WEBAPP_NAME: kafka-lab-api-appservice
+  DOTNET_VERSION: "10.0.x"
+  PUBLISH_PATH: "./publish"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ./src/KafkaLab.Api/KafkaLab.Api.csproj
+
+      - name: Build
+        run: dotnet build ./src/KafkaLab.Api/KafkaLab.Api.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish ./src/KafkaLab.Api/KafkaLab.Api.csproj -c Release --no-build -o ${{ env.PUBLISH_PATH }}
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ${{ env.PUBLISH_PATH }}
