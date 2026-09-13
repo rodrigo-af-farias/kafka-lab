@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write
 
 jobs:
   publish:
@@ -18,9 +19,11 @@ jobs:
         include:
           - name: kafka-lab-api
             dockerfile: ./src/KafkaLab.Api/Dockerfile
+            container_app: kafka-lab-api
 
           - name: kafka-lab-consumer
             dockerfile: ./src/KafkaLab.Consumer/Dockerfile
+            container_app: kafka-lab-consumer
 
     steps:
       - name: Checkout repository
@@ -40,7 +43,7 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
           tags: |
             type=raw,value=latest
-            type=sha,prefix=sha-
+            type=sha,prefix=sha-,format=long
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -50,3 +53,17 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Container Apps
+        run: |
+          az containerapp update \
+            --name "${{ matrix.container_app }}" \
+            --resource-group "kafka-lab-rg" \
+            --image "ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}:sha-${{ github.sha }}"
