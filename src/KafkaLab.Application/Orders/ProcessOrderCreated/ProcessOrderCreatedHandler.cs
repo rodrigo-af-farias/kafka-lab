@@ -28,15 +28,15 @@ public sealed class ProcessOrderCreatedHandler
         if (!markedAsProcessed)
         {
             Console.WriteLine(
-                $"Evento duplicado ignorado: {integrationEvent.EventId}");
+                $"Evento duplicado ignorado: {integrationEvent.EventId}{Environment.NewLine}");
 
             return;
         }
 
         Console.WriteLine(
-            $"{Environment.NewLine}{Environment.NewLine}Processando OrderCreated: " +
+            $"Processando OrderCreated: " +
             $"EventId={integrationEvent.EventId} | " +
-            $"OrderId={integrationEvent.OrderId}{Environment.NewLine}{Environment.NewLine}");
+            $"OrderId={integrationEvent.OrderId}{Environment.NewLine}");
 
         // Futuro processamento da ordem ficará aqui.
     }

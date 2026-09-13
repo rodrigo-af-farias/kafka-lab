@@ -58,7 +58,7 @@ using var consumer = new ConsumerBuilder<string, string>(config).Build();
 consumer.Subscribe("orders");
 
 Console.WriteLine(
-    $"{Environment.NewLine}{Environment.NewLine}=== Consumer iniciado. Kafka={kafkaBootstrapServers} ==={Environment.NewLine}{Environment.NewLine}");
+    $"{Environment.NewLine}=== Consumer iniciado. Kafka={kafkaBootstrapServers} ==={Environment.NewLine}");
 
 while (true)
 {
