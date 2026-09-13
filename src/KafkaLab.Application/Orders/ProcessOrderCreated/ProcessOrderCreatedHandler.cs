@@ -34,8 +34,8 @@ public sealed class ProcessOrderCreatedHandler
         }
 
         Console.WriteLine(
-            $"Processando OrderCreated: " +
-            $"EventId={integrationEvent.EventId} | " +
+            $"Processando OrderCreated:\n" +
+            $"EventId={integrationEvent.EventId}\n" +
             $"OrderId={integrationEvent.OrderId}{Environment.NewLine}");
 
         // Futuro processamento da ordem ficará aqui.
