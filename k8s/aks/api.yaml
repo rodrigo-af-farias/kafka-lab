@@ -1,0 +1,82 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-lab-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kafka-lab-api
+  template:
+    metadata:
+      labels:
+        app: kafka-lab-api
+    spec:
+      containers:
+        - name: kafka-lab-api
+          image: ghcr.io/rodrigo-af-farias/kafka-lab-api:latest
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-lab-eh-prd.servicebus.windows.net:9093"
+
+            - name: KAFKA_SASL_USERNAME
+              value: "$ConnectionString"
+
+            - name: KAFKA_SASL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-lab-secrets
+                  key: eventhubs-connection-string
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: kafka-lab-keyvault
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-lab-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: kafka-lab-api
+  ports:
+    - port: 80
+      targetPort: 8080

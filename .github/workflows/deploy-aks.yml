@@ -1,0 +1,69 @@
+﻿name: Deploy to AKS
+
+on:
+  workflow_run:
+    workflows:
+      - "Publish Docker Images"
+    types:
+      - completed
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  RESOURCE_GROUP: kafka-lab-rg
+  AKS_CLUSTER: kafka-lab-aks
+
+jobs:
+  deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout deployed commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Set AKS context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          cluster-name: ${{ env.AKS_CLUSTER }}
+
+      - name: Deploy manifests
+        run: |
+          kubectl apply -f k8s/aks/secret-provider.yaml
+          kubectl apply -f k8s/aks/api.yaml
+          kubectl apply -f k8s/aks/consumer.yaml
+
+      - name: Deploy API image
+        run: |
+          kubectl set image deployment/kafka-lab-api \
+            kafka-lab-api=ghcr.io/${{ github.repository_owner }}/kafka-lab-api:sha-${{ github.event.workflow_run.head_sha }}
+
+      - name: Deploy Consumer image
+        run: |
+          kubectl set image deployment/kafka-lab-consumer \
+            kafka-lab-consumer=ghcr.io/${{ github.repository_owner }}/kafka-lab-consumer:sha-${{ github.event.workflow_run.head_sha }}
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/kafka-lab-api --timeout=180s
+          kubectl rollout status deployment/kafka-lab-consumer --timeout=180s
+
+      - name: Show deployed resources
+        run: |
+          kubectl get pods
+          kubectl get service kafka-lab-api

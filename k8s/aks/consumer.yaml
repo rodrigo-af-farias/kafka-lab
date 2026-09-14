@@ -1,0 +1,58 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-lab-consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-lab-consumer
+  template:
+    metadata:
+      labels:
+        app: kafka-lab-consumer
+    spec:
+      containers:
+        - name: kafka-lab-consumer
+          image: ghcr.io/rodrigo-af-farias/kafka-lab-consumer:latest
+          imagePullPolicy: Always
+
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-lab-eh-prd.servicebus.windows.net:9093"
+
+            - name: KAFKA_SASL_USERNAME
+              value: "$ConnectionString"
+
+            - name: KAFKA_SASL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-lab-secrets
+                  key: eventhubs-connection-string
+
+            - name: SQLSERVER_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-lab-secrets
+                  key: sqlserver-connection-string
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: kafka-lab-keyvault
